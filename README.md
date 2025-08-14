@@ -315,7 +315,7 @@ docker-compose exec dns-firewall /update-blocklists.sh
 # Update AI model
 docker-compose exec ai-service python update_model.py
 ```
-
+<!---
 ## 🤝 Contributing
 
 1. Fork the repository
@@ -323,16 +323,17 @@ docker-compose exec ai-service python update_model.py
 3. Commit changes (`git commit -m 'Add amazing feature'`)
 4. Push to branch (`git push origin feature/amazing-feature`)
 5. Open Pull Request
-
+--->
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
+<!---
 ## 🆘 Support
 
 - **Documentation**: [Wiki](https://github.com/your-repo/wiki)
 - **Issues**: [GitHub Issues](https://github.com/your-repo/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/your-repo/discussions)
+
 
 ## 🔮 Roadmap
 
@@ -342,3 +343,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [ ] Mobile application
 - [ ] API rate limiting enhancements
 - [ ] Advanced threat hunting capabilities
+--->
