@@ -1,3 +1,9 @@
+> ⚠️ **Warning: Project Under Development**
+>
+> This project is currently in active development and **only works with sample DNS query data**.  
+> Real-time DNS query resolution, DNS-over-HTTPS, and DNSSEC features are **not yet implemented**.  
+> Use for **testing and educational purposes only** — not for production environments.
+
 # Advanced Secure AI-Powered DNS Firewall Server
 
 A comprehensive DNS security solution that combines real-time threat intelligence, AI-powered domain classification, and advanced monitoring capabilities.
