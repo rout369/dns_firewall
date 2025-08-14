@@ -1,0 +1,144 @@
+version: '3.8'
+
+services:
+  # DNS Firewall Core (Go)
+  dns-firewall:
+    build:
+      context: ./services/dns-server
+      dockerfile: Dockerfile
+    ports:
+      - "53:53/udp"
+      - "853:853/tcp"  # DNS-over-TLS
+      - "443:443/tcp"  # DNS-over-HTTPS
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - MONGODB_URL=mongodb://mongo:27017/dns_firewall
+      - AI_SERVICE_URL=http://ai-service:8000
+      - VIRUSTOTAL_API_KEY=${VIRUSTOTAL_API_KEY}
+      - ABUSEIPDB_API_KEY=${ABUSEIPDB_API_KEY}
+    depends_on:
+      - redis
+      - mongo
+      - ai-service
+    volumes:
+      - ./config/dns:/config
+    networks:
+      - dns-network
+
+  # AI Classification Service (Python FastAPI)
+  ai-service:
+    build:
+      context: ./services/ai-classifier
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - MODEL_PATH=/models/domain_classifier.pkl
+      - REDIS_URL=redis://redis:6379
+    volumes:
+      - ./models:/models:ro
+      - ./data:/data:ro
+    depends_on:
+      - redis
+    networks:
+      - dns-network
+
+  # Dashboard Backend (Node.js Express)
+  dashboard-backend:
+    build:
+      context: ./services/dashboard-backend
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - MONGODB_URL=mongodb://mongo:27017/dns_firewall
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=${JWT_SECRET}
+    depends_on:
+      - mongo
+      - redis
+    networks:
+      - dns-network
+
+  # Dashboard Frontend (React)
+  dashboard-frontend:
+    build:
+      context: ./services/dashboard-frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    environment:
+      - REACT_APP_API_URL=http://dashboard-backend:3001
+      - REACT_APP_WS_URL=ws://dashboard-backend:3001
+    depends_on:
+      - dashboard-backend
+    networks:
+      - dns-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    networks:
+      - dns-network
+
+  # MongoDB
+  mongo:
+    image: mongo:6
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASSWORD}
+      - MONGO_INITDB_DATABASE=dns_firewall
+    volumes:
+      - mongo_data:/data/db
+      - ./config/mongodb:/docker-entrypoint-initdb.d:ro
+    networks:
+      - dns-network
+
+  # Prometheus Monitoring
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./config/prometheus:/etc/prometheus:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+    networks:
+      - dns-network
+
+  # Grafana Dashboard
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3002:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./config/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./config/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+    networks:
+      - dns-network
+
+volumes:
+  redis_data:
+  mongo_data:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  dns-network:
+    driver: bridge

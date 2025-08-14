@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dns-firewall
+  namespace: dns-firewall
+  labels:
+    app: dns-firewall
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: dns-firewall
+  template:
+    metadata:
+      labels:
+        app: dns-firewall
+    spec:
+      containers:
+      - name: dns-firewall
+        image: dns-firewall:latest
+        ports:
+        - containerPort: 53
+          protocol: UDP
+        - containerPort: 853
+          protocol: TCP
+        - containerPort: 443
+          protocol: TCP
+        env:
+        - name: REDIS_URL
+          value: "redis://redis-service:6379"
+        - name: MONGODB_URL
+          value: "mongodb://mongo-service:27017/dns_firewall"
+        - name: AI_SERVICE_URL
+          value: "http://ai-service:8000"
+        - name: VIRUSTOTAL_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: api-keys
+              key: virustotal-key
+        - name: ABUSEIPDB_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: api-keys
+              key: abuseipdb-key
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        volumeMounts:
+        - name: config
+          mountPath: /config
+          readOnly: true
+      volumes:
+      - name: config
+        configMap:
+          name: dns-config
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dns-firewall-service
+  namespace: dns-firewall
+spec:
+  type: LoadBalancer
+  ports:
+  - name: dns-udp
+    port: 53
+    targetPort: 53
+    protocol: UDP
+  - name: dns-over-tls
+    port: 853
+    targetPort: 853
+    protocol: TCP
+  - name: dns-over-https
+    port: 443
+    targetPort: 443
+    protocol: TCP
+  selector:
+    app: dns-firewall

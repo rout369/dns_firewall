@@ -1,0 +1,59 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  # - "first_rules.yml"
+  # - "second_rules.yml"
+
+scrape_configs:
+  # DNS Firewall metrics
+  - job_name: 'dns-firewall'
+    static_configs:
+      - targets: ['dns-firewall:8080']
+    scrape_interval: 10s
+    metrics_path: /metrics
+
+  # Dashboard Backend metrics
+  - job_name: 'dashboard-backend'
+    static_configs:
+      - targets: ['dashboard-backend:3001']
+    scrape_interval: 15s
+    metrics_path: /api/metrics/prometheus
+
+  # AI Classifier metrics
+  - job_name: 'ai-classifier'
+    static_configs:
+      - targets: ['ai-service:8000']
+    scrape_interval: 15s
+    metrics_path: /metrics
+
+  # Redis metrics
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis:6379']
+    scrape_interval: 30s
+
+  # MongoDB metrics
+  - job_name: 'mongodb'
+    static_configs:
+      - targets: ['mongo:27017']
+    scrape_interval: 30s
+
+  # System metrics
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+    scrape_interval: 15s
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          # - alertmanager:9093
+
+# Storage configuration
+storage:
+  tsdb:
+    retention.time: 30d
+    retention.size: 10GB
